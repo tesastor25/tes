@@ -1,6 +1,24 @@
 # how to deploy application
 helm upgrade --install svc-user . --values values-testing.yaml --debug
 
+# how to debug application error on kubernetes
+## untuk melihat pods
+1. kubectl get pods -n <namespace> 
+## melihat logs stream pada pods
+2. kubectl logs -f <namapods> -n <namespace>
+## melihat detail pods
+3. kubectl describe pods <namapods> -n <namespace>
+## melihat ingress
+4. kubectl get ing -n <namespace>
+## melihat manifest ingress
+5. kubectl get ing <namaingress> -n <namespace> -o yaml
+## melihat service kubernetes
+6. kubectl get svc -n <namespace>
+
+**note : 
+4xx kebanyakan error pada codingan, tetapi tidak menutup kemungkinan devops/cloud engineer/infrastruktur membantu check.
+5xx kebanyakan error pada infrastruktur cara trace secara umum dimulai dari layer 1 sampai layer 7 yaitu applications
+
 # Taints:
 ## Fungsi: 
 Mencegah pod dari dijadwalkan pada node tertentu, kecuali jika pod tersebut memiliki toleration yang sesuai. Ini digunakan untuk mengontrol penempatan pod dan mencegah pod yang tidak diinginkan dari ditempatkan pada node tertentu.
