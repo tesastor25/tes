@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "svc-user.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: svc-user
+    type: backend
+  {{- include "svc-user.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.svcUser.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: svc-user
+      type: backend
+    {{- include "svc-user.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: svc-user
+        type: backend
+      {{- include "svc-user.selectorLabels" . | nindent 8 }}
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: {{ .Values.svcUser.affinity.nodeAffinity.required.key }}
+                operator: {{ .Values.svcUser.affinity.nodeAffinity.required.operator }}
+                values: 
+                {{ toYaml .Values.svcUser.affinity.nodeAffinity.required.values | nindent 12 }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: {{ .Values.svcUser.affinity.nodeAffinity.preferred.weight }}
+            preference:
+              matchExpressions:
+              - key: {{ .Values.svcUser.affinity.nodeAffinity.preferred.key }}
+                operator: {{ .Values.svcUser.affinity.nodeAffinity.preferred.operator }}
+                values: 
+                {{ toYaml .Values.svcUser.affinity.nodeAffinity.preferred.values | nindent 14 }}
+      tolerations:
+      {{- toYaml .Values.svcUser.tolerations | nindent 6 }}
+      containers:
+      - env:
+        - name: TZ
+          value: {{ quote .Values.svcUser.svcUser.env.tz }}
+        envFrom:
+        - secretRef:
+            name: {{ .Values.svcUser.svcUser.secretRef }}
+        - configMapRef:
+            name: {{ .Values.svcUser.svcUser.configMapRef }}
+        image: {{ .Values.svcUser.svcUser.image.repository }}:{{ .Values.svcUser.svcUser.image.tag
+          | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.svcUser.svcUser.imagePullPolicy }}
+        name: svc-user
+        resources: {{- toYaml .Values.svcUser.svcUser.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.svcUser.svcUser.livenessProbe.httpGet.path }}
+            port: {{ .Values.svcUser.svcUser.livenessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.svcUser.svcUser.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.svcUser.svcUser.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.svcUser.svcUser.livenessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.svcUser.svcUser.livenessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.svcUser.svcUser.livenessProbe.failureThreshold }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.svcUser.svcUser.readinessProbe.httpGet.path }}
+            port: {{ .Values.svcUser.svcUser.readinessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.svcUser.svcUser.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.svcUser.svcUser.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.svcUser.svcUser.readinessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.svcUser.svcUser.readinessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.svcUser.svcUser.readinessProbe.failureThreshold }}
+        startupProbe:
+          httpGet:
+            path: {{ .Values.svcUser.svcUser.startupProbe.httpGet.path }}
+            port: {{ .Values.svcUser.svcUser.startupProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.svcUser.svcUser.startupProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.svcUser.svcUser.startupProbe.periodSeconds }}
+          successThreshold: {{ .Values.svcUser.svcUser.startupProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.svcUser.svcUser.startupProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.svcUser.svcUser.startupProbe.failureThreshold }}
+      imagePullSecrets:
+      {{- toYaml .Values.svcUser.svcUser.imagePullSecrets | nindent 8 }}
+      restartPolicy: Always

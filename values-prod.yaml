@@ -1,0 +1,144 @@
+namespace: prod
+
+svcUser:
+  replicas: 1
+  svcUser:
+    env:
+      tz: Asia/Jakarta
+    secretRef: svc-user-password
+    configMapRef: svc-user-cm
+    image:
+      repository: asia-southeast2-docker.pkg.dev/prod-234421/backend/svc-user
+      tag: "24"
+    imagePullPolicy: Always
+    resources:
+      limits:
+        cpu: 4
+        memory: 5Gi
+      requests:
+        cpu: 150m
+        memory: 512Mi
+    livenessProbe:
+      httpGet:
+        path: /svc-user/actuator/health
+        port: 8080
+      initialDelaySeconds: 120
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /svc-user/actuator/health
+        port: 8080
+      initialDelaySeconds: 120
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+      failureThreshold: 3
+    startupProbe:
+      httpGet:
+        path: /actuator/health
+        port: 8080
+      initialDelaySeconds: 60
+      periodSeconds: 10
+      successThreshold: 1
+      failureThreshold: 10
+      timeoutSeconds: 5
+    imagePullSecrets:
+      - name: artifact-credentials
+    affinity:
+      nodeAffinity:
+        required:
+          key: "kubernetes.io/hostname"
+          operator: In
+          values:
+            - "node1"
+            - "node2"
+        preferred:
+          weight: 1
+          key: "kubernetes.io/hostname"
+          operator: In
+          values:
+            - "node3"
+    tolerations:
+      - key: "example-key"
+        operator: "Equal"
+        value: "example-value"
+        effect: "NoSchedule"
+      - key: "another-key"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 3600
+  sidecar:
+    image:
+      repository: asia-southeast2-docker.pkg.dev/prod-234421/backend/svc-user-sidecar
+      tag: "22"
+    imagePullPolicy: Always
+
+service:
+  enabled: true
+  name: svc-user-clusterip
+  namespace: prod
+  # clusterIP: ""
+  portName: svc-user-clusterip
+  port: 8080
+  protocol: TCP
+  targetPort: 8080
+  selector:
+    app: svc-user
+  sessionAffinity: None
+  type: ClusterIP
+
+enableConfigMap: true
+configMapName: svc-user-cm
+configMapData:
+  APP_PORT: "8080"
+  APP_NAME: "user-service"
+  APP_BASE_URL: "svc-user"
+  PAYMENT_BASEURL: "svc-payment-clusterip"
+  # postgreSQL
+  DB_HOST: "10.43.24.89"
+  DB_PORT: "5432"
+  DB_NAME: "user"
+  DB_SSL: "false"
+  DB_DEBUG: "true"
+
+secret:
+  enabled: true
+  name: svc-user-password
+  data:
+    DB_USER: c3ZjX2NvbW1lbnQ=
+    DB_PASS: dGVzdGluZ2FqYQ==
+
+
+hpa:
+  enabled: true
+  name: svc-user
+  scaleTargetRef:
+    name: svc-user
+  minReplicas: 2
+  maxReplicas: 3
+  cpuTargetUtilization: 100
+  memoryTargetUtilization: 200
+
+
+ingress:
+  enabled: true
+  name: nginx-svc-user
+  ingressClassName: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Frame-Options "sameorigin";
+      add_header X-Content-Type-Options nosniff;
+      add_header Referrer-Policy 'same-origin';
+      add_header X-XSS-Protection: "1; mode=block";
+  host: api.prod.com
+  backend:
+    serviceName: svc-user-clusterip
+    servicePort: 8080
+  path: /svc-user
+  pathType: ImplementationSpecific
+  secretName: prod-tls
+
+

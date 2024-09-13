@@ -1,0 +1,18 @@
+{{- if .Values.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ .Values.service.namespace }}
+spec:
+#   clusterIP: {{ .Values.service.clusterIP }}
+  ports:
+    - name: {{ .Values.service.portName }}
+      port: {{ .Values.service.port }}
+      protocol: {{ .Values.service.protocol }}
+      targetPort: {{ .Values.service.targetPort }}
+  selector:
+    app: {{ .Values.service.selector.app }}
+  sessionAffinity: {{ .Values.service.sessionAffinity }}
+  type: {{ .Values.service.type }}
+{{- end }}
